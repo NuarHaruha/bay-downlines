@@ -55,6 +55,295 @@ function get_total_downline($id)
     return ($results) ? $results[0]->total : 0;
 }
 
+function get_children_count($id){
+    return get_total_downline($id);
+}
+
+/**
+ *  lv2
+ */
+function get_grand_children_count($uid){
+    $gchild = get_grand_children($uid);
+
+    $count = 0;
+
+    if (!empty($gchild)){
+        foreach($gchild as $id=> $users){
+
+            if (is_array($users)){
+                foreach($users as $i){
+                    $count++;
+                }
+            }
+        }
+    }
+
+    return $count;
+}
+function get_grand_children_approved_sales($uid){
+    $gchild = get_grand_children($uid);
+
+    $sales = 0;
+
+    if (!empty($gchild)){
+        foreach($gchild as $id=> $users){
+
+            if (is_array($users)){
+                foreach($users as $i){
+                    $id = (int) $i;
+
+                    $invoices = get_approved_invoice_id($id);
+
+                    // check the invoice items
+                    if ($invoices){
+                        foreach($invoices as $invoice){
+                            $sales++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return $sales;
+}
+
+function get_grand_children_sales($uid){
+    $gchild = get_grand_children($uid);
+
+    $sales = 0;
+
+    if (!empty($gchild)){
+        foreach($gchild as $id=> $users){
+
+            if (is_array($users)){
+                foreach($users as $i){
+                    $id = (int) $i;
+
+                    $invoices = get_all_invoice_id($id);
+
+                    // check the invoice items
+                    if ($invoices){
+                        foreach($invoices as $invoice){
+                            $sales++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return $sales;
+}
+
+
+function get_grand_children_pv($uid){
+    $gchild = get_grand_children($uid);
+
+    $pv = 0;
+
+    if (!empty($gchild)){
+        foreach($gchild as $id=> $users){
+
+            if (is_array($users)){
+                foreach($users as $i){
+                    $id = (int) $i;
+
+                    $invoices = get_approved_invoice_id($id);
+
+                    // check the invoice items
+                    if ($invoices){
+                        foreach($invoices as $invoice){
+                            $items = get_invoice_meta($invoice->invoice_id, 'orders', false);
+
+                            // get items pv
+                            if ($items){
+                                foreach($items as $index => $item){
+
+                                    foreach($item['product_id'] as $pid => $amount){
+
+                                        $meta = get_post_meta( $pid );
+                                        $points = (int) $meta['pv'][0];
+                                        $unit   = (int) $item['quantity'][$pid];
+                                        $points = $points * $unit;
+                                        $pv += $points;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return $pv;
+}
+
+function get_direct_children($uid){
+    global $wpdb;
+
+    $db         = $wpdb->usermeta;
+
+    $code       = uinfo($uid,'code');
+
+    $sql = "SELECT user_id id FROM $db WHERE meta_key='id_penaja' AND meta_value=%s";
+
+    $query = $wpdb->prepare($sql,$code);
+
+    return $wpdb->get_results($query);
+}
+
+function get_grand_children($uid){
+
+    $children = get_direct_children($uid);
+
+    $g_children = array();
+
+       if ($children){
+           foreach($children as $child){
+               $e = get_direct_children($child->id);
+               if (!empty($e)){
+                   $g_children[$child->id] = $e;
+               }
+           }
+       }
+    return $g_children;
+}
+
+function get_children_pv($uid){
+    global $wpdb;
+
+    $db         = $wpdb->usermeta;
+
+    $code       = uinfo($uid,'code');
+
+    $sql = "SELECT user_id id FROM $db WHERE meta_key='id_penaja' AND meta_value=%s";
+
+    $query = $wpdb->prepare($sql,$code);
+
+    $children   = $wpdb->get_results($query);
+
+    $pv = 0;
+
+    if ($children){
+        foreach($children as $child){
+            $id = $child->id;
+            $invoices = get_approved_invoice_id($id);
+
+            // check the invoice items
+            if ($invoices){
+                foreach($invoices as $invoice){
+                    $items = get_invoice_meta($invoice->invoice_id, 'orders', false);
+
+                    // get items pv
+                    if ($items){
+                        foreach($items as $index => $item){
+
+                            foreach($item['product_id'] as $pid => $amount){
+
+                                $meta = get_post_meta( $pid );
+                                $points = (int) $meta['pv'][0];
+                                $unit   = (int) $item['quantity'][$pid];
+                                $points = $points * $unit;
+                                $pv += $points;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return $pv;
+}
+
+
+function get_children_approved_sales_count($uid){
+    global $wpdb;
+
+    $db         = $wpdb->usermeta;
+
+    $code       = uinfo($uid,'code');
+
+    $sql = "SELECT user_id id FROM $db WHERE meta_key='id_penaja' AND meta_value=%s";
+
+    $query = $wpdb->prepare($sql,$code);
+
+    $children   = $wpdb->get_results($query);
+
+    $sales = 0;
+
+    if ($children){
+        foreach($children as $child){
+            $id = $child->id;
+            $invoices = get_approved_invoice_id($id);
+
+            // check the invoice items
+            if ($invoices){
+                foreach($invoices as $invoice){
+                    $sales++;
+                }
+            }
+        }
+    }
+
+    return $sales;
+}
+
+
+function get_children_sales_count($uid){
+    global $wpdb;
+
+    $db         = $wpdb->usermeta;
+
+    $code       = uinfo($uid,'code');
+
+    $sql = "SELECT user_id id FROM $db WHERE meta_key='id_penaja' AND meta_value=%s";
+
+    $query = $wpdb->prepare($sql,$code);
+
+    $children   = $wpdb->get_results($query);
+
+    $sales = 0;
+
+    if ($children){
+        foreach($children as $child){
+            $id = $child->id;
+            $invoices = get_all_invoice_id($id);
+
+            // check the invoice items
+            if ($invoices){
+                foreach($invoices as $invoice){
+                    $sales++;
+                }
+            }
+        }
+    }
+
+    return $sales;
+}
+
+function get_approved_invoice_id($uid){
+    global $wpdb;
+
+    $db     = $wpdb->base_prefix.mc_products_sales::DB_TABLE_INVOICE;
+
+    $sql    = "SELECT invoice_id FROM $db WHERE ordered_by=%d AND order_status=%s AND created_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 MONTH) AND CURDATE()";
+
+    return $wpdb->get_results($wpdb->prepare($sql,$uid,'approved'));
+}
+
+function get_all_invoice_id($uid){
+    global $wpdb;
+
+    $db     = $wpdb->base_prefix.mc_products_sales::DB_TABLE_INVOICE;
+
+    $sql    = "SELECT invoice_id FROM $db WHERE ordered_by=%d AND created_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 1 MONTH) AND CURDATE()";
+
+    return $wpdb->get_results($wpdb->prepare($sql,$uid));
+}
+
 
 function get_total_spend($id)
 {   global $wpdb;
