@@ -1,6 +1,6 @@
 <?php
 /**
- * @author Nuarharuha 
+ * @author Nuarharuha <nhnoah+bay-isra@gmail.com> 
  */	
 
 class mc_downlines
